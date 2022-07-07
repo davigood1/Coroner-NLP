@@ -333,7 +333,7 @@ table.95CI
 #Final tables/plots
 tables.list <- list(table.train.all.ranked, table.train.best, table.test, table.95CI, error.tables.list)
 
-plot.list <- list(p.heat, p.heat2, test_CM_table)
+
 
 # write function
 p_load(officer, flextable)
@@ -354,9 +354,9 @@ my_doc1 <- officer::read_docx()
 walk(tables.list, write_word_table, my_doc1) 
 
 # use walk to include plots
-write_word_plot(statistic.plot.list, my_doc1) 
-write_word_plot(statistic.best.plot.list, my_doc1) 
-write_word_plot(test_CM_table, my_doc1) 
+walk(statistic.plot.list, write_word_plot, my_doc1) 
+walk(statistic.best.plot.list, write_word_plot, my_doc1) 
+walk(test_CM_table, write_word_plot, my_doc1) 
 
 #Create word doc
 print(my_doc1, target = paste0("Tables/NLP_tables_", Sys.Date(), "_tf_idf.docx")) %>% invisible()

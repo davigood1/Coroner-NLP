@@ -32,6 +32,10 @@ testing <- map(data_split, ~
                  testing(.x)
 )
 
+#Load training/testing
+training <- read_rds("Data/training.rds")
+testing <- read_rds("Data/testing.rds")
+
 #Cross validation
 cv_folds <- map2(training, outcomes.list, ~ vfold_cv(.x, v = 10, strata = .y)
 )
@@ -68,15 +72,17 @@ nnet_spec <-  mlp(hidden_units = tune(), penalty = tune(), epochs = tune()) %>%
   set_engine("nnet")
 
 #Model over lists
-rec.list <- map2(outcomes, outcomes.list, ~ 
-                  recipe(. ~ text, data = training %>% select(.x, text)) %>%
-                  #update_role(one_of(.x), new_role = "outcome") %>%
-                  update_role(text, new_role = "predictor") %>%
-                  step_tokenize(text,
-                                options = list(lowercase = TRUE)) %>%
-                  step_tokenfilter(text, min_times = 5) %>%
-                  step_stopwords(text) %>%
-                  step_word_embeddings(text, embeddings = glove6b)
+rec.list <- pmap(list(outcomes, outcomes.list, training), ~ 
+                   recipe(. ~ text, data = ..3 %>% select(.data[[..1]], text)) %>%
+                   #update_role(one_of(.x), new_role = "outcome") %>%
+                   update_role(text, new_role = "predictor") %>%
+                   step_tokenize(text,
+                                 options = list(lowercase = F,
+                                                strip_punct = TRUE)) %>%
+                   step_tokenfilter(text, min_times = 5) %>%       
+                   step_stopwords(text) %>%
+                   step_word_embeddings(text, embeddings = glove6b)
+                 
 )
 
 #Set-up workflow
@@ -350,9 +356,9 @@ my_doc1 <- officer::read_docx()
 walk(tables.list, write_word_table, my_doc1) 
 
 # use walk to include plots
-write_word_plot(statistic.plot.list, my_doc1) 
-write_word_plot(statistic.best.plot.list, my_doc1) 
-write_word_plot(test_CM_table, my_doc1) 
+walk(statistic.plot.list, write_word_plot, my_doc1) 
+walk(statistic.best.plot.list, write_word_plot, my_doc1) 
+walk(test_CM_table, write_word_plot, my_doc1) 
 
 #Create word doc
 print(my_doc1, target = paste0("Tables/NLP_tables_embed_glove", Sys.Date(), ".docx")) %>% invisible()

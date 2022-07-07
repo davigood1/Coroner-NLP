@@ -1,6 +1,6 @@
 # install.packages("pacman")
 library(pacman)
-p_load(tidyverse, tidylog, purrr, colorspace, flextable) # Basic
+p_load(tidyverse, tidylog, purrr, colorspace, flextable, gtsummary) # Basic
 p_load(textrecipes, tidytext, stopwords, wordcloud) # Text processing helpers
 
 set.seed(100)
@@ -14,6 +14,47 @@ df %>%
   summarise(n = n()) %>%
   mutate(Percentage = round(n / sum(n) * 100, 1)) %>%
   arrange(desc(n))
+
+##Wrangle race/ethnicity
+df %>%
+  select(Age, Gender...6, Race) %>%
+  mutate(Race = case_when(
+    str_detect(tolower(Race), "white") ~ "White",
+    str_detect(tolower(Race), "black") ~ "Black",
+    str_detect(tolower(Race), "latino") ~ "Latino",
+    #str_detect(tolower(Race), "LATINO") ~ "Latino",
+    str_detect(tolower(Race), "hispanic") ~ "Latino",
+    #str_detect(tolower(Race), "HISPANIC") ~ "Latino",
+    str_detect(tolower(Race), "asian") ~ "Asian",
+    str_detect(tolower(Race), "chinese") ~ "Asian",
+    str_detect(tolower(Race), "filipino") ~ "Asian",
+    str_detect(tolower(Race), "cambodian") ~ "Asian",
+    str_detect(tolower(Race), "indian") ~ "Asian",
+    str_detect(tolower(Race), "japanese") ~ "Asian",
+    str_detect(tolower(Race), "korean") ~ "Asian",
+    str_detect(tolower(Race), "laotian") ~ "Asian",
+    str_detect(tolower(Race), "thai") ~ "Asian",
+    str_detect(tolower(Race), "vietnamese") ~ "Asian",
+    str_detect(tolower(Race), "nat amer") ~ "American Indian or Alaska Native",
+    str_detect(tolower(Race), "native american") ~ "American Indian or Alaska Native",
+    str_detect(tolower(Race), "am. indian") ~ "American Indian or Alaska Native",
+    str_detect(tolower(Race), "am. indian south") ~ "American Indian or Alaska Native",
+    str_detect(tolower(Race), "american indian") ~ "American Indian or Alaska Native",
+    str_detect(tolower(Race), "armenian") ~ "Middle Eastern",
+    str_detect(tolower(Race), "middle eastern") ~ "Middle Eastern",
+    str_detect(tolower(Race), "guamanian") ~ "Native Hawaiian and Other Pacific Islander",
+    str_detect(tolower(Race), "hawaiian") ~ "Native Hawaiian and Other Pacific Islander",
+    str_detect(tolower(Race), "pacific islander") ~ "Native Hawaiian and Other Pacific Islander",
+    str_detect(tolower(Race), "samoan") ~ "Native Hawaiian and Other Pacific Islander",
+    str_detect(tolower(Race), "multi-racial") ~ "Multiracial",
+    str_detect(tolower(Race), "multiracial") ~ "Multiracial",
+    str_detect(tolower(Race), "0") ~ "Unknown",
+    str_detect(tolower(Race), "null") ~ "Unknown",
+    str_detect(tolower(Race), "other") ~ "Unknown",
+    str_detect(tolower(Race), "unknown") ~ "Unknown",
+    TRUE ~ Race
+  )) %>%
+  tbl_summary()
 
 ## Descriptives for text
 df %>%
@@ -153,6 +194,35 @@ ggplot(
   )
 ggsave("Plots/fig 2.tiff", height = 8, width = 10, dpi = 300)
 
+#Percentage plot - Requested by reviewer
+df.perc <- df.long %>% 
+  filter(!name %in% c("Dextromethorphan", "Opioid", "Xanax", "Others", "Flualprazolam")) %>%
+  group_by(name, value) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n) * 100) %>%
+  filter(value == 1) %>%
+  filter(!name %in% c("Dextromethorphan", "Opioid", "Xanax", "Others", "Flualprazolam")) %>%
+  arrange(desc(freq))
+df.perc$name <- ifelse(df.perc$name == "Prescription.opioids", "Prescription opioids", df.perc$name)
+df.perc$name <- factor(df.perc$name, levels = unique(df.perc$name[order(desc(df.perc$freq))])) 
+ 
+ggplot(data = df.perc, aes(x = name, y = freq)) +
+  geom_bar(stat = "identity", fill = "navy blue", alpha = 0.9) +
+  geom_text(aes(label = paste0(round(freq,1),"%")), stat = "identity", vjust = -0.5) +
+  ggpubr::geom_bracket(y.position = 10, xmin = "Anticonvulsant", xmax = "MDA", label = 'Grouped as "Others"',
+                       label.size = 6, size = 1) +
+  labs(x = "Substance", y = "Percentage") +
+  scale_y_continuous(limits = c(0,20)) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, size = 14, hjust = 1),
+    text = element_text(size = 14),     
+    legend.position = "none"
+  )
+ggsave("Plots/fig 2_percentage.tiff", height = 8, width = 10, dpi = 300)
+ggsave("Plots/fig 2_percentage.pdf", height = 8, width = 10, dpi = 300)
+
+
 # How many are all negative
 ggplot(
   data = df %>% group_by(`Number of substances`) %>% count() %>% uncount(n),
@@ -168,7 +238,7 @@ ggplot(
     legend.position = "none"
   )
 
-# Co-occurence table
+# Co-occurence table - Supplement table
 df.cross <- as.data.frame(
   crossprod(
     as.matrix(df[, c(

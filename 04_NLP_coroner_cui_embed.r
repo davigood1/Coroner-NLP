@@ -25,6 +25,8 @@ cui2vec_embed <- dataset_cui2vec_embeddings()
 cui2vec_embed <- cui2vec_embed %>% rename(token = cui)
 cui2vec_embed <- as_tibble(cui2vec_embed)
 saveRDS(cui2vec_embed, "Data/cui2vec_embed.RDS")
+
+#Load cui2vec embeddings
 cui2vec_embed <- readRDS("cui2vec_embed.RDS")
 cui2vec_embed <- as_tibble(cui2vec_embed)
 
@@ -53,6 +55,7 @@ df.cui2 <- df %>%
 
 #Save
 #saveRDS(df.cui2, "Data/df_cui2.RDS")
+#df.cui2 <- read_rds("Data/df_cui2.RDS")
 
 #Set-up outcomes list for map
 outcomes.list <- c("Any Opioids", "Heroin", "Fentanyl", "Prescription.opioids", "Methamphetamine", "Cocaine", 
@@ -73,6 +76,10 @@ training <- map(data_split, ~
 testing <- map(data_split, ~
                  testing(.x)
 )
+
+#Load training/testing
+training <- read_rds("Data/training.rds")
+testing <- read_rds("Data/testing.rds")
 
 #Cross validation
 cv_folds <- map2(training, outcomes.list, ~ vfold_cv(.x, v = 10, strata = .y)
@@ -395,9 +402,9 @@ my_doc1 <- officer::read_docx()
 walk(tables.list, write_word_table, my_doc1) 
 
 # use walk to include plots
-write_word_plot(statistic.plot.list, my_doc1) 
-write_word_plot(statistic.best.plot.list, my_doc1) 
-write_word_plot(test_CM_table, my_doc1) 
+walk(statistic.plot.list, write_word_plot, my_doc1) 
+walk(statistic.best.plot.list, write_word_plot, my_doc1) 
+walk(test_CM_table, write_word_plot, my_doc1) 
 
 #Create word doc
 print(my_doc1, target = paste0("Tables/NLP_tables_cui_embed", Sys.Date(), ".docx")) %>% invisible()
