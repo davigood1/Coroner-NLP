@@ -1,3 +1,9 @@
+Copyright (c) 2022, David Goodman-Meza
+All rights reserved.
+
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree. 
+
 #Load libraries
 library(pacman)
 p_load(tidyverse, tidylog, purrr, forcats, visdat, flextable, colorspace, gtsummary, tidymodels, tictoc) #Basic
